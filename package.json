@@ -1,0 +1,71 @@
+{
+  "name": "handmade",
+  "version": "0.0.1",
+  "description": "A nodejs, mongodb and with pm2 based rest api with token authorization",
+  "author": "Bengt Weiße <bengtler@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KillerCodeMonkey/handmade"
+  },
+  "keywords": [
+    "nodejs",
+    "cron",
+    "email",
+    "pm2",
+    "rest",
+    "api",
+    "mongodb",
+    "bearer",
+    "token authentication",
+    "jwt",
+    "jsonwebtoken"
+  ],
+  "scripts": {
+    "preinstall": [
+      "npm install -g jsdoc",
+      "npm install -g grunt-cli",
+      "npm install -g pm2@0.14.7"
+    ]
+  },
+  "dependencies": {
+    "requirejs": "2.1.20",
+    "express": "4.13.3",
+    "body-parser": "1.13.3",
+    "method-override": "2.3.5",
+    "errorhandler": "1.4.2",
+    "node-promise": "0.5.12",
+    "mongoose": "4.1.6",
+    "grunt": "0.4.5",
+    "grunt-exec": "0.4.6",
+    "grunt-contrib-clean": "0.6.0",
+    "connect-busboy": "0.0.2",
+    "jsonwebtoken": "5.0.5",
+    "mkdirp": "0.5.1",
+    "underscore": "1.8.3",
+    "agenda": "0.6.28",
+    "request": "~2.61.0",
+    "cors": "2.7.1",
+    "nodemailer": "~1.4.0",
+    "nodemailer-smtp-transport": "~1.0.3",
+    "email-templates": "~2.0.1",
+    "handlebars": "~3.0.3"
+  },
+  "licence": "MIT",
+  "devDependencies": {
+    "expect.js": "0.3.1",
+    "grunt-apidoc": "0.10.1",
+    "grunt-mocha-test": "0.12.7",
+    "grunt-mocha-istanbul": "3.0.1",
+    "istanbul": "^0.3.20",
+    "supertest": "1.1.0"
+  },
+  "engines": {
+    "node": ">= 0.10.33"
+  },
+  "apidoc": {
+    "title": "NoGo - API Documentation",
+    "url": "https://host/api/v1",
+    "apiSampleRequest": "on",
+    "sampleUrl": "localhost:3000/api/v1"
+  }
+}
