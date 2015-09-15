@@ -1,14 +1,10 @@
-/* global define */
-/** @file authentication.js Endpoints for authentication request
- *  @module Authentication
- * */
 define([
     'jsonwebtoken',
     'crypto',
     'appConfig',
     'databaseConfig',
     'node-promise'
-], /** @lends Authentication */ function (jwt, crypto, appConfig, dbConfig, promise) {
+], function (jwt, crypto, appConfig, dbConfig, promise) {
     'use strict';
 
     var Promise = promise.Promise,

@@ -2,8 +2,9 @@
 define([
     'mongoose',
     'crypto',
-    'appConfig'
-], function (mongoose, crypto, appConfig) {
+    'appConfig',
+    'models/image'
+], function (mongoose, crypto, appConfig, image) {
     'use strict';
 
     var Schema = mongoose.Schema,
@@ -14,7 +15,7 @@ define([
                 type: String,
                 unqiue: true
             },
-                izedUsername: String,
+            normalizedUsername: String,
             email: {
                 type: String,
                 required: true
@@ -39,6 +40,9 @@ define([
                 type: Boolean,
                 'default': false
             },
+            website: String,
+            bio: String,
+            avatar: [image.schema],
             data: {}
         });
 
@@ -65,7 +69,7 @@ define([
     User.pre('save', function (next) {
         // save     ized username
         if (this.username) {
-            this.    izedUsername = this.username.toLowerCase();
+            this.normalizedUsername = this.username.toLowerCase();
         }
         next();
     });

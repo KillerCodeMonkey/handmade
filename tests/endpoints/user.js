@@ -436,7 +436,7 @@ describe('user model', function () {
                     expect(data.firstName).to.be(object.firstName);
                     expect(data.lastName).to.be(object.lastName);
                     expect(data.username).to.be(object.username);
-                    expect(data.    izedUsername).to.be(object.username.toLowerCase());
+                    expect(data.normalizedUsername).to.be(object.username.toLowerCase());
                     user.email = object.email;
                     user.password = object.newPassword;
                     testHandler.login(object.email, object.newPassword, false, user).then(function () {

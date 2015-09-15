@@ -9,6 +9,7 @@ define([
     var rest = {},
         fields = [
             'username',
+            'avatar',
             '_id'
         ],
         Promise = promise.Promise;
@@ -55,7 +56,7 @@ define([
                 selector.email = new RegExp(helper.regExpEscape(filter.email.toString()), 'i');
             }
             if (!pager.orderBy || (typeof pager.orderBy === 'string' && !User.schema.path(pager.orderBy))) {
-                pager.orderBy = '    izedUsername';
+                pager.orderBy = 'normalizedUsername';
             }
             if (pager.orderDesc === undefined) {
                 pager.orderDesc = false;
@@ -147,7 +148,7 @@ define([
      * @apiHeaderExample {json} Authorization-Header-Example:
                       { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
      * @apiSuccess {String} username username of the User.
-     * @apiSuccess {String}     izedUsername username in lowercase.
+     * @apiSuccess {String} normalizedUsername username in lowercase.
      * @apiSuccess {String} email email address of the User.
      * @apiSuccess {String} creationDate registration date of the User.
      * @apiSuccess {String[]} permissions the permissions/roles of the user.
@@ -655,6 +656,8 @@ define([
      * @apiGroup User
      * @apiVersion 1.0.0
      * @apiPermission User
+     * @apiParam {String} [website] optional website or blog link
+     * @apiParam {String} [bio] little text about the user
      * @apiParam {String} [email] email address to send new pw
      * @apiParam {String} [password] account password to set new email, password
      * @apiParam {String} [newPassword] new account password
@@ -748,6 +751,14 @@ define([
             'username': {
                 type: String,
                 regex: /^\S{4,20}$/,
+                optional: true
+            },
+            'bio': {
+                type: String,
+                optional: true
+            },
+            'website': {
+                type: String,
                 optional: true
             }
         },
