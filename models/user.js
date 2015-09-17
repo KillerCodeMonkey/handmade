@@ -76,19 +76,16 @@ define([
         next();
     });
 
-    User.pre('remove', function (next) {
-        this.images.forEach(function (image) {
+    User.post('remove', function (user) {
+        user.avatar.forEach(function (image) {
             image.remove();
         });
-        project.schema.remove({
-            user: this._id
-        }, function () {
-            authentication.schema.remove({
-                user: this._id
-            }, function () {
-                next();
-            });
-        });
+        project.model.remove({
+            user: user._id
+        }).exec();
+        authentication.model.remove({
+            user: user._id
+        }).exec();
     });
 
     UserModel = mongoose.model('User', User);

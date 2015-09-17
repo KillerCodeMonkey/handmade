@@ -60,24 +60,22 @@ define([
         }),
         Model = mongoose.model('Project', Project);
 
-    Project.pre('remove', function (next) {
-        this.images.forEach(function (image) {
+    Project.post('remove', function (project) {
+        project.images.forEach(function (image) {
             image.remove();
         });
-        this.materials.forEach(function (material) {
+        project.materials.forEach(function (material) {
             material.remove();
         });
-        this.steps.forEach(function (step) {
+        project.steps.forEach(function (step) {
             step.remove();
         });
-        next();
     });
 
-    Step.pre('remove', function (next) {
-        this.images.forEach(function (image) {
+    Step.post('remove', function (step) {
+        step.images.forEach(function (image) {
             image.remove();
         });
-        next();
     });
 
     return {

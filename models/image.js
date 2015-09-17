@@ -31,10 +31,8 @@ define([
         }),
         Model = mongoose.model('Image', Image);
 
-    Image.pre('save', function (next) {
-        helper.imageRemove(this.toObject()).then(function () {
-            next();
-        });
+    Image.post('remove', function (image) {
+        helper.imageRemove(image);
     });
 
     return {

@@ -143,6 +143,38 @@ define([
         }
     };
 
+    /**
+    * @api {get} /project Get Project list
+    * @apiName GetProjects
+    * @apiDescription Gets a list of projects (filtered, as admin, own or other public)
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission authorized
+    * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+    * @apiHeaderExample {json} Authorization-Header-Example:
+                     { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+    * @apiSuccess {Object[]} ProjectList list of project objects.
+    *
+    * @apiSuccessExample Success-Response:
+    *     HTTP/1.1 200 OK
+    *     [{
+    *       "public": false,
+    *       "description": "asdf asdfsad fa",
+    *       "title": "My Project",
+    *       "materials": [{"name": "Hammer", "amount": "1"}],
+    *       "steps": [{"title": "First", "description": "afsadf dsa fas", "images": [{}]}],
+    *       "images": [{ ... }],
+    *       "_id": "507f191e810c19729de860ea"
+    *     }]
+    *
+    * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    */
     rest.read = {
         permissions: [appConfig.permissions.user, appConfig.permissions.admin],
         models: ['project'],
