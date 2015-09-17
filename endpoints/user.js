@@ -114,7 +114,7 @@ define([
         pager: true,
         exec: function (req, res, User) {
             var selector = {},
-            getAllFields = true;
+                getAllFields = true;
             if (req.user) {
                 selector._id = { // remove own user
                     $ne: req.user._id
@@ -249,27 +249,17 @@ define([
     rest.remove = {
         object: true,
         permissions: [appConfig.permissions.admin],
-        models: ['authentication'],
-        exec: function (req, res, Authentication) {
-            // delete authentications of user if admin deletes him
-            Authentication.remove({
-                user: req.object._id
-            }, function (err) {
-                if (err) {
+        models: [],
+        exec: function (req, res) {
+            // delete user
+            req.object.remove(function (removeErr) {
+                if (removeErr) {
                     return res.status(500).send({
-                        error: err
+                        error: removeErr
                     });
                 }
-                // delete user
-                req.object.remove(function (removeErr) {
-                    if (removeErr) {
-                        return res.status(500).send({
-                            error: removeErr
-                        });
-                    }
 
-                    res.send();
-                });
+                res.send();
             });
         }
     };
@@ -586,7 +576,6 @@ define([
         models: ['user'],
         exec: function (req, res, User) {
             var params = req.params,
-                checkTask = [],
                 user;
 
             if (req.user) {
@@ -815,7 +804,7 @@ define([
                             error: 'email_exists'
                         });
                     }
-                    if (setEmail && setUsername && results[1] || setUsername && results[0]) {
+                    if ((setEmail && setUsername && results[1]) || (setUsername && results[0])) {
                         return res.status(400).send({
                             error: 'username_exists'
                         });

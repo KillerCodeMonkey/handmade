@@ -3,8 +3,10 @@ define([
     'mongoose',
     'crypto',
     'appConfig',
-    'models/image'
-], function (mongoose, crypto, appConfig, image) {
+    'models/image',
+    'models/project',
+    'models/authentication'
+], function (mongoose, crypto, appConfig, image, project, authentication) {
     'use strict';
 
     var Schema = mongoose.Schema,
@@ -67,11 +69,26 @@ define([
     };
 
     User.pre('save', function (next) {
-        // save     ized username
+        // save normalized username
         if (this.username) {
             this.normalizedUsername = this.username.toLowerCase();
         }
         next();
+    });
+
+    User.pre('remove', function (next) {
+        this.images.forEach(function (image) {
+            image.remove();
+        });
+        project.schema.remove({
+            user: this._id
+        }, function () {
+            authentication.schema.remove({
+                user: this._id
+            }, function () {
+                next();
+            });
+        });
     });
 
     UserModel = mongoose.model('User', User);

@@ -1,6 +1,7 @@
 define([
-    'mongoose'
-], function (mongoose) {
+    'mongoose',
+    'util/helper'
+], function (mongoose, helper) {
     'use strict';
 
     var Schema = mongoose.Schema,
@@ -29,6 +30,12 @@ define([
             }]
         }),
         Model = mongoose.model('Image', Image);
+
+    Image.pre('save', function (next) {
+        helper.imageRemove(this.toObject()).then(function () {
+            next();
+        });
+    });
 
     return {
         model: Model,

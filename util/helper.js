@@ -86,6 +86,39 @@ define([
         }); // fs.exists
     }
 
+    function deleteFile(filepath) {
+        var q = new Promise();
+
+        fs.unlink(filepath, function (err) {
+            if (err) {
+                return q.reject(err);
+            }
+            q.resolve();
+        });
+
+        return q;
+    }
+
+    function imageRemove(imageObject) {
+        var q = new Promise(),
+            i = 0,
+            deleteTasks = [];
+
+        if (imageObject && imageObject.path) {
+            // unlink original file
+            deleteTasks.push(deleteFile(process.cwd() + '/static/public/' + imageObject.path));
+            for (i; i < imageObject.variants.length; i = i + 1) {
+                // unlink all variants
+                deleteTasks.push(deleteFile(process.cwd() + '/static/public/' + imageObject.variants[i].path));
+            }
+        }
+        promise.all(deleteTasks).then(function () {
+            q.resolve();
+        });
+
+        return q;
+    }
+
     return {
         rmdirRecursiveAsync: function (removePath, cb) {
             rmdirRecursive(removePath, cb);
@@ -271,6 +304,7 @@ define([
             });
 
             return q;
-        }
+        },
+        imageRemove: imageRemove
     };
 });

@@ -1,13 +1,10 @@
 define([
-    'jsonwebtoken',
     'appConfig',
-    'databaseConfig',
-    'node-promise'
-], function (jwt, appConfig, dbConfig, promise) {
+    'underscore'
+], function (appConfig, _) {
     'use strict';
 
-    var Promise = promise.Promise,
-        rest = {};
+    var rest = {};
 
     rest.create = {
         permissions: [appConfig.permissions.user],
@@ -47,19 +44,224 @@ define([
                 type: String
             }
         },
-        models: ['project'],
         object: true,
-        exec: function (req, res, Project) {
-            var newProject = new Project(req.params);
+        exec: function (req, res) {
+            if (req.object.steps.length === 10) {
+                return res.status(400).send({
+                    error: 'steps_limit_reached'
+                });
+            }
 
-            newProject.save(function (err, savedProject) {
+            req.object.save(function (err, saved) {
+                if (err) {
+                    return res.status(500).send({
+                        error: err
+                    });
+                }
+                res.send(saved.toObject());
+            });
+        }
+    };
+
+    rest.update = {
+        permissions: [appConfig.permissions.user, appConfig.permissions.admin],
+        params: {
+            'title': {
+                type: String
+            },
+            'description': {
+                type: String,
+                optional: true
+            },
+            'materials': {
+                type: Array
+            },
+            'public': {
+                type: Boolean,
+                optional: true
+            }
+        },
+        object: true,
+        exec: function (req, res) {
+            if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1 && !req.object.user.equals(req.user._id)) {
+                return res.status(403).send();
+            }
+            _.extend(req.object, req.params);
+
+            req.object.save(function (err, saved) {
                 if (err) {
                     return res.status(500).send({
                         error: err
                     });
                 }
 
-                res.send(savedProject.toObject());
+                res.send(saved.toObject());
+            });
+        }
+    };
+
+    rest.updateStep = {
+        permissions: [appConfig.permissions.user, appConfig.permissions.admin],
+        params: {
+            '_id': {
+                type: String,
+                required: true
+            },
+            'title': {
+                type: String
+            },
+            'description': {
+                type: String,
+                optional: true
+            },
+            'complete': {
+                type: Boolean
+            }
+        },
+        object: true,
+        exec: function (req, res) {
+            if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1 && !req.object.user.equals(req.user._id)) {
+                return res.status(403).send();
+            }
+            var step = req.object.materials.id(req.params._id);
+            if (step) {
+                return res.send();
+            }
+
+            delete req.params._id;
+            _.extend(step, req.params);
+
+            req.object.save(function (err, saved) {
+                if (err) {
+                    return res.status(500).send({
+                        error: err
+                    });
+                }
+
+                res.send(saved.toObject());
+            });
+        }
+    };
+
+    rest.read = {
+        permissions: [appConfig.permissions.user, appConfig.permissions.admin],
+        models: ['project'],
+        params: {
+            me: {
+                type: Boolean,
+                optional: true,
+                query: true
+            }
+        },
+        pager: true,
+        exec: function (req, res, Project) {
+            var selector = {};
+
+            if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1) {
+                selector.public = true;
+            }
+            if (req.params.me) {
+                selector.user = req.user._id;
+            } else {
+                selector.user = {
+                    $ne: req.user._id
+                };
+            }
+
+            Project.find(selector).lean().exec(function (err, projects) {
+                if (err) {
+                    return res.status(500).send({
+                        error: err
+                    });
+                }
+
+                res.send(projects);
+            });
+        }
+    };
+
+    rest.readOne = {
+        permissions: [appConfig.permissions.user, appConfig.permissions.admin],
+        object: true,
+        exec: function (req, res) {
+            if (req.object.user.equals(req.user._id) || req.object.public || req.user.permissions.indexOf(appConfig.permissions.admin) !== -1) {
+                return res.send(req.object.toObject());
+            }
+
+            res.status(403).send();
+        }
+    };
+
+    rest.remove = {
+        permissions: [appConfig.permissions.user, appConfig.permissions.admin],
+        models: ['project'],
+        exec: function (req, res, Project) {
+            var selector = {};
+
+            if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1) {
+                selector.user = req.user._id;
+            }
+
+            Project.remove(selector, function (err) {
+                if (err) {
+                    return res.status(500).send();
+                }
+
+                res.send();
+            });
+        }
+    };
+
+    rest.removeOne = {
+        permissions: [appConfig.permissions.user, appConfig.permissions.admin],
+        object: true,
+        models: [],
+        exec: function (req, res) {
+            if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1 && req.user._id.equals(req.object._id)) {
+                return res.status(403).send();
+            }
+
+            req.object.remove(function (err) {
+                if (err) {
+                    return res.status(500).send();
+                }
+
+                res.send();
+            });
+        }
+    };
+
+    rest.removeStep = {
+        permissions: [appConfig.permissions.user, appConfig.permissions.admin],
+        params: {
+            '_id': {
+                type: String,
+                query: true,
+                required: true
+            }
+        },
+        object: true,
+        models: [],
+        exec: function (req, res) {
+            var step = req.object.materials.id(req.params._id);
+
+            if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1 && !req.object.user.equals(req.user._id)) {
+                return res.status(403).send();
+            }
+
+            if (!step) {
+                return res.send();
+            }
+            step.remove();
+
+            req.object.save(function (err) {
+                if (err) {
+                    return res.status(500).send({
+                        error: err
+                    });
+                }
+
+                res.send();
             });
         }
     };
