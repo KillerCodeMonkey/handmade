@@ -4,8 +4,31 @@ define([
 ], function (appConfig, _) {
     'use strict';
 
-    var rest = {};
+    var rest = {},
+        fields = '_id username email avatar';
 
+        /**
+        * @api {post} /project Create Project
+        * @apiName CreateProject
+        * @apiDescription Creates a project (User)
+        * @apiGroup Project
+        * @apiVersion 1.0.0
+        * @apiPermission authorized
+        * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+        * @apiHeaderExample {json} Authorization-Header-Example:
+                         { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+        * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+        *
+        * @apiErrorExample Error-Response:
+        *     HTTP/1.1 500 Internal Server Error
+        *     {
+        *       "error": "MONGODB ERROR OBJECT"
+        *     }
+        * @apiError (Error 403) Forbidden No access to this project
+        *
+        * @apiErrorExample Error-Response:
+        *     HTTP/1.1 403 Forbidden
+        */
     rest.create = {
         permissions: [appConfig.permissions.user],
         params: {
@@ -28,11 +51,39 @@ define([
                     });
                 }
 
-                res.send(savedProject.toObject());
+                savedProject.populate('user', fields, function (populateErr, populated) {
+                    if (populateErr) {
+                        return res.status(500).send({
+                            error: populateErr
+                        });
+                    }
+                    return res.send(populated.toObject());
+                });
             });
         }
     };
-
+    /**
+    * @api {post} /project/:id Create Step
+    * @apiName CreateProjectStep
+    * @apiDescription create a project step (User)
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission authorized
+    * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+    * @apiHeaderExample {json} Authorization-Header-Example:
+                     { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+    * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    * @apiError (Error 403) Forbidden No access to this project
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 403 Forbidden
+    */
     rest.createStep = {
         permissions: [appConfig.permissions.user],
         params: {
@@ -58,11 +109,39 @@ define([
                         error: err
                     });
                 }
-                res.send(saved.toObject());
+                saved.populate('user', fields, function (populateErr, populated) {
+                    if (populateErr) {
+                        return res.status(500).send({
+                            error: populateErr
+                        });
+                    }
+                    return res.send(populated.toObject());
+                });
             });
         }
     };
-
+    /**
+    * @api {put} /project/:id Update Step
+    * @apiName UpdateProject
+    * @apiDescription Updates a project (as admin, own)
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission authorized
+    * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+    * @apiHeaderExample {json} Authorization-Header-Example:
+                     { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+    * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    * @apiError (Error 403) Forbidden No access to this project
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 403 Forbidden
+    */
     rest.update = {
         permissions: [appConfig.permissions.user, appConfig.permissions.admin],
         params: {
@@ -95,11 +174,40 @@ define([
                     });
                 }
 
-                res.send(saved.toObject());
+                saved.populate('user', fields, function (populateErr, populated) {
+                    if (populateErr) {
+                        return res.status(500).send({
+                            error: populateErr
+                        });
+                    }
+                    return res.send(populated.toObject());
+                });
             });
         }
     };
 
+    /**
+    * @api {put} /project/:id Update Step
+    * @apiName UpdateProjectStep
+    * @apiDescription Updates a project step (as admin, own)
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission authorized
+    * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+    * @apiHeaderExample {json} Authorization-Header-Example:
+                     { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+    * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    * @apiError (Error 403) Forbidden No access to this project
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 403 Forbidden
+    */
     rest.updateStep = {
         permissions: [appConfig.permissions.user, appConfig.permissions.admin],
         params: {
@@ -138,13 +246,20 @@ define([
                     });
                 }
 
-                res.send(saved.toObject());
+                saved.populate('user', fields, function (populateErr, populated) {
+                    if (populateErr) {
+                        return res.status(500).send({
+                            error: populateErr
+                        });
+                    }
+                    return res.send(populated.toObject());
+                });
             });
         }
     };
 
     /**
-    * @api {get} /project Get Project list
+    * @api {get} /project Get Projects
     * @apiName GetProjects
     * @apiDescription Gets a list of projects (filtered, as admin, own or other public)
     * @apiGroup Project
@@ -200,7 +315,7 @@ define([
                 };
             }
 
-            Project.find(selector).lean().exec(function (err, projects) {
+            Project.find(selector).populate('user', fields).lean().exec(function (err, projects) {
                 if (err) {
                     return res.status(500).send({
                         error: err
@@ -211,19 +326,79 @@ define([
             });
         }
     };
-
+    /**
+    * @api {get} /project/:id Get Project
+    * @apiName GetProject
+    * @apiDescription Gets a project (as admin, own or other public)
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission authorized
+    * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+    * @apiHeaderExample {json} Authorization-Header-Example:
+                     { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+    * @apiSuccess {Object} Project project object
+    *
+    * @apiSuccessExample Success-Response:
+    *     HTTP/1.1 200 OK
+    *     {
+    *       "public": false,
+    *       "description": "asdf asdfsad fa",
+    *       "title": "My Project",
+    *       "materials": [{"name": "Hammer", "amount": "1"}],
+    *       "steps": [{"title": "First", "description": "afsadf dsa fas", "images": [{}]}],
+    *       "images": [{ ... }],
+    *       "_id": "507f191e810c19729de860ea",
+    *       "user": "{...}"
+    *     }
+    *
+    * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    * @apiError (Error 403) Forbidden No access to this project
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 403 Forbidden
+    */
     rest.readOne = {
         permissions: [appConfig.permissions.user, appConfig.permissions.admin],
         object: true,
         exec: function (req, res) {
             if (req.object.user.equals(req.user._id) || req.object.public || req.user.permissions.indexOf(appConfig.permissions.admin) !== -1) {
-                return res.send(req.object.toObject());
+                return req.object.populate('user', fields, function (err, populated) {
+                    if (err) {
+                        return res.status(500).send({
+                            error: err
+                        });
+                    }
+                    return res.send(populated.toObject());
+                });
             }
 
             res.status(403).send();
         }
     };
-
+    /**
+    * @api {delete} /project Remove Projects
+    * @apiName RemoveProjects
+    * @apiDescription Removes all projects or all for user (as admin, own)
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission authorized
+    * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+    * @apiHeaderExample {json} Authorization-Header-Example:
+                     { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+    * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    */
     rest.remove = {
         permissions: [appConfig.permissions.user, appConfig.permissions.admin],
         models: ['project'],
@@ -244,6 +419,28 @@ define([
         }
     };
 
+    /**
+    * @api {delete} /project/:id Remove Project
+    * @apiName RemoveProject
+    * @apiDescription Remove a project (as admin, own)
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission authorized
+    * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+    * @apiHeaderExample {json} Authorization-Header-Example:
+                     { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+    * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    * @apiError (Error 403) Forbidden No access to this project
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 403 Forbidden
+    */
     rest.removeOne = {
         permissions: [appConfig.permissions.user, appConfig.permissions.admin],
         object: true,
@@ -263,6 +460,28 @@ define([
         }
     };
 
+    /**
+    * @api {delete} /project/:id?_id=:stepId Remove Step
+    * @apiName RemoveProjectStep
+    * @apiDescription Removes a project step (as admin, own)
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission authorized
+    * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+    * @apiHeaderExample {json} Authorization-Header-Example:
+                     { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+    * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    * @apiError (Error 403) Forbidden No access to this project
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 403 Forbidden
+    */
     rest.removeStep = {
         permissions: [appConfig.permissions.user, appConfig.permissions.admin],
         params: {
@@ -300,25 +519,25 @@ define([
 
     return {
         v1: {
-            // post: {
-            //     // create new project
-            //     '': rest.create,
-            //     // create new step
-            //     'step': rest.createStep
-            // },
-            // put: {
-            //     'object': rest.update,
-            //     'step': rest.updateStep
-            // },
-            // get: {
-            //     '': rest.read,
-            //     'object': rest.readOne
-            // },
-            // 'delete': {
-            //     '': rest.remove,
-            //     'object': removeOne,
-            //     'step': removeStep
-            // }
+            post: {
+                // create new project
+                '': rest.create,
+                // create new step
+                'step': rest.createStep
+            },
+            put: {
+                'object': rest.update,
+                'step': rest.updateStep
+            },
+            get: {
+                '': rest.read,
+                'object': rest.readOne
+            },
+            'delete': {
+                '': rest.remove,
+                'object': rest.removeOne,
+                'step': rest.removeStep
+            }
         }
     };
 });
