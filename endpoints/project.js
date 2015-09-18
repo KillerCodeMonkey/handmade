@@ -34,14 +34,21 @@ define([
         params: {
             'title': {
                 type: String,
-                required: true
+                validate: function (title) {
+                    if (!title) {
+                        return false;
+                    }
+                    return true;
+                }
             },
             'description': {
-                type: String
+                type: String,
+                optional: true
             }
         },
         models: ['project'],
         exec: function (req, res, Project) {
+            req.params.user = req.user._id;
             var newProject = new Project(req.params);
 
             newProject.save(function (err, savedProject) {
