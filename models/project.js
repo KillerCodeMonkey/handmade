@@ -56,6 +56,10 @@ define([
                 required: true,
                 'default': false
             },
+            creationDate: {
+                type: Date,
+                'default': Date.now
+            },
             data: {}
         }),
         Model = mongoose.model('Project', Project);
