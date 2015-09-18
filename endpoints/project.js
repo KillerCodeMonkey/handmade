@@ -331,19 +331,20 @@ define([
         models: ['project'],
         params: {
             me: {
-                type: Boolean,
+                type: String,
                 optional: true,
-                query: true
+                query: true,
+                regex: /^true|false$/,
             }
         },
         pager: true,
         exec: function (req, res, Project) {
             var selector = {};
 
-            if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1) {
+            if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1 && (req.params.me === 'false' || !req.params.me)) {
                 selector.public = true;
             }
-            if (req.params.me) {
+            if (req.params.me === 'true') {
                 selector.user = req.user._id;
             } else {
                 selector.user = {
@@ -482,7 +483,7 @@ define([
         object: true,
         models: [],
         exec: function (req, res) {
-            if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1 && req.user._id.equals(req.object._id)) {
+            if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1 && !req.user._id.equals(req.object.user)) {
                 return res.status(403).send();
             }
 
@@ -497,7 +498,7 @@ define([
     };
 
     /**
-    * @api {delete} /project/id/:id?_id=:stepId Remove Step
+    * @api {delete} /project/id/:id/step?_id=:stepId Remove Step
     * @apiName RemoveProjectStep
     * @apiDescription Removes a project step (as admin, own)
     * @apiGroup Project
@@ -530,7 +531,7 @@ define([
         object: true,
         models: [],
         exec: function (req, res) {
-            var step = req.object.materials.id(req.params._id);
+            var step = req.object.steps.id(req.params._id);
 
             if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1 && !req.object.user.equals(req.user._id)) {
                 return res.status(403).send();

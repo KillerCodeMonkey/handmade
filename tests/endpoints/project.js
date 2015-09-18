@@ -304,7 +304,7 @@ describe('project model', function () {
                     expect(data.steps[0].complete).to.be(true);
                     expect(data.steps[0].title).to.be('editStep');
                     expect(data.steps[0].description).not.to.be(undefined);
-                    step = data;
+                    step = data.steps[0];
                     done();
                 });
         });
@@ -379,6 +379,250 @@ describe('project model', function () {
                     'title': 'Test'
                 })
                 .expect(403, done);
+        });
+    });
+    describe('GET /project - get projects', function () {
+        it('200 - other public projects', function (done) {
+            request(app)
+                .get(restURL)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(data.length).to.be(0);
+                    done();
+                });
+        });
+        it('200 - other public projects 2', function (done) {
+            request(app)
+                .get(restURL)
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(data.length).to.be(1);
+                    done();
+                });
+        });
+        it('200 - own projects', function (done) {
+            request(app)
+                .get(restURL + '?me=true')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(data.length).to.be(2);
+                    done();
+                });
+        });
+        it('200 - own projects 2', function (done) {
+            request(app)
+                .get(restURL + '?me=true')
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(data.length).to.be(0);
+                    done();
+                });
+        });
+        it('403 - unauthorized', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id + '/step')
+                .send({
+                    '_id': step._id,
+                    'title': 'Test'
+                })
+                .expect(403, done);
+        });
+    });
+    describe('GET /project/id/:id - get one project', function () {
+        it('200 - other public project', function (done) {
+            request(app)
+                .get(restURL + '/id/' + publicProject._id)
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .expect(200, done);
+        });
+        it('200 - other private projects', function (done) {
+            request(app)
+                .get(restURL + '/id/' + privateProject._id)
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .expect(403, done);
+        });
+        it('200 - own project', function (done) {
+            request(app)
+                .get(restURL + '/id/' + privateProject._id)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .expect(200, done);
+        });
+        it('403 - unauthorized', function (done) {
+            request(app)
+                .get(restURL + '/id/' + publicProject._id)
+                .expect(403, done);
+        });
+    });
+    describe('DELETE /project/id/:id/step?_id=:stepid - remove a step of project', function () {
+        it('403 - other project', function (done) {
+            request(app)
+                .del(restURL + '/id/' + publicProject._id + '/step?_id=' + step._id)
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .expect(403, done);
+        });
+        it('403 - unauthorized', function (done) {
+            request(app)
+                .del(restURL + '/id/' + publicProject._id + '/step?_id=' + step._id)
+                .expect(403, done);
+        });
+        it('200 - own project', function (done) {
+            request(app)
+                .del(restURL + '/id/' + publicProject._id + '/step?_id=' + step._id)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .expect(200)
+                .end(function (err) {
+                    if (err) {
+                        return done(err);
+                    }
+                    request(app)
+                        .get(restURL + '/id/' + publicProject._id)
+                        .set('Authorization', 'Bearer ' + testuser.accessToken)
+                        .expect(200)
+                        .end(function (err, res) {
+                            if (err) {
+                                return done(err);
+                            }
+                            expect(res.body.steps.length).to.be(1);
+
+                            done();
+                        });
+                });
+        });
+    });
+    describe('DELETE /project/id/:id - remove a project', function () {
+        it('403 - other project', function (done) {
+            request(app)
+                .del(restURL + '/id/' + publicProject._id)
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .expect(403, done);
+        });
+        it('403 - unauthorized', function (done) {
+            request(app)
+                .del(restURL + '/id/' + publicProject._id)
+                .expect(403, done);
+        });
+        it('200 - own project', function (done) {
+            request(app)
+                .del(restURL + '/id/' + publicProject._id)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .expect(200)
+                .end(function (err) {
+                    if (err) {
+                        return done(err);
+                    }
+                    request(app)
+                        .get(restURL + '/id/' + publicProject._id)
+                        .set('Authorization', 'Bearer ' + testuser.accessToken)
+                        .expect(404)
+                        .end(function (err) {
+                            if (err) {
+                                return done(err);
+                            }
+                            request(app)
+                                .get(restURL + '?me=true')
+                                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                                .expect(200)
+                                .end(function (err, res) {
+                                    if (err) {
+                                        return done(err);
+                                    }
+
+                                    expect(res.body.length).to.be(1);
+                                    done();
+                                });
+                        });
+                });
+        });
+    });
+    describe('DELETE /project - remove all own projects', function () {
+        it('200 - user 2 projects', function (done) {
+            request(app)
+                .del(restURL)
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    request(app)
+                        .get(restURL + '?me=true')
+                        .set('Authorization', 'Bearer ' + testuser.accessToken)
+                        .expect(200)
+                        .end(function (err, res) {
+                            if (err) {
+                                return done(err);
+                            }
+
+                            expect(res.body.length).to.be(1);
+                            done();
+                        });
+                });
+        });
+        it('403 - unauthorized', function (done) {
+            request(app)
+                .del(restURL)
+                .expect(403, done);
+        });
+        it('200 - user 1', function (done) {
+            request(app)
+                .del(restURL)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    request(app)
+                        .get(restURL + '?me=true')
+                        .set('Authorization', 'Bearer ' + testuser.accessToken)
+                        .expect(200)
+                        .end(function (err, res) {
+                            if (err) {
+                                return done(err);
+                            }
+
+                            expect(res.body.length).to.be(0);
+                            done();
+                        });
+                });
         });
     });
 });
