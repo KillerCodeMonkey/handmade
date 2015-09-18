@@ -8,7 +8,9 @@ var request = require('supertest'),
     admin,
     publicProject,
     privateProject,
+    step,
     testuser,
+    testuser2,
     restURL;
 
 describe('project model', function () {
@@ -24,7 +26,12 @@ describe('project model', function () {
                     testHandler.register('lasmaranda.densivilla@schnitten.sx', 'kicken', 'testname').then(function (newUser) {
                         testuser = newUser;
                         testHandler.login(testuser.email, testuser.password, false, testuser).then(function () {
-                            done();
+                            testHandler.register('lasmaranda2.densivilla@schnitten.sx', 'kicken', 'testname2').then(function (newUser2) {
+                                testuser2 = newUser2;
+                                testHandler.login(testuser2.email, testuser2.password, false, testuser2).then(function () {
+                                    done();
+                                });
+                            });
                         }, done);
                     }, done);
                 }, done);
@@ -98,6 +105,280 @@ describe('project model', function () {
                 .post(restURL)
                 .set('Authorization', 'Bearer ' + testuser.accessToken)
                 .expect(400, done);
+        });
+        it('400 - whitespace title', function (done) {
+            request(app)
+                .post(restURL)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    'title': '    '
+                })
+                .expect(400, done);
+        });
+        it('403 - unauthorized', function (done) {
+            request(app)
+                .post(restURL)
+                .send({
+                    'title': 'Test'
+                })
+                .expect(403, done);
+        });
+    });
+    describe('POST /project/id/:id/step - create new step for a project', function () {
+        it('200', function (done) {
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    'title': 'First Step',
+                    'description': 'test description'
+                })
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(data.steps.length).to.be(1);
+                    expect(data.steps[0].title).to.be('First Step');
+                    expect(data.steps[0].description).to.be('test description');
+                    step = data.steps[0];
+                    done();
+                });
+        });
+        it('200 - second step', function (done) {
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    'title': 'second tests'
+                })
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(data.steps.length).to.be(2);
+                    expect(data.steps[1].title).to.be('second tests');
+                    expect(data.steps[1].description).to.be(undefined);
+                    done();
+                });
+        });
+        it('400 - empty title', function (done) {
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    'title': ''
+                })
+                .expect(400, done);
+        });
+        it('400 - whitespace title', function (done) {
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    'title': '    '
+                })
+                .expect(400, done);
+        });
+        it('400 - without title', function (done) {
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .expect(400, done);
+        });
+        it('403 - unauthorized', function (done) {
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/step')
+                .send({
+                    'title': 'Test'
+                })
+                .expect(403, done);
+        });
+    });
+    describe('PUT /project/id/:id - update project', function () {
+        it('200', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    'title': 'First Step',
+                    'public': true,
+                    'materials': [{
+                        'name': 'My Material',
+                        'amount': '5'
+                    }]
+                })
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(data.public).to.be(true);
+                    expect(data.steps.length).to.be(2);
+                    expect(data.materials.length).to.be(1);
+                    expect(data.materials[0].name).to.be('My Material');
+                    expect(data.materials[0].amount).to.be('5');
+                    publicProject = data;
+                    done();
+                });
+        });
+        it('400 - empty title', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    'title': ''
+                })
+                .expect(400, done);
+        });
+        it('400 - whitespace title', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    'title': '    '
+                })
+                .expect(400, done);
+        });
+        it('400 - without title', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .expect(400, done);
+        });
+        it('403 - unauthorized', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id)
+                .send({
+                    'title': 'Test'
+                })
+                .expect(403, done);
+        });
+        it('403 - as other user', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id)
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .send({
+                    'title': 'Test'
+                })
+                .expect(403, done);
+        });
+    });
+    describe('PUT /project/id/:id/step - update project step', function () {
+        it('200', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    '_id': step._id,
+                    'title': 'editStep',
+                    'complete': true
+                })
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(data.steps.length).to.be(2);
+                    expect(data.steps[0].complete).to.be(true);
+                    expect(data.steps[0].title).to.be('editStep');
+                    expect(data.steps[0].description).not.to.be(undefined);
+                    step = data;
+                    done();
+                });
+        });
+        it('400 - empty title', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    '_id': step._id,
+                    'title': ''
+                })
+                .expect(400, done);
+        });
+        it('400 - whitespace title', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    '_id': step._id,
+                    'title': '    '
+                })
+                .expect(400, done);
+        });
+        it('400 - without title', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    '_id': step._id
+                })
+                .expect(400, done);
+        });
+        it('400 - empty _id', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    '_id': ''
+                })
+                .expect(400, done);
+        });
+        it('400 - whitespace _id', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .send({
+                    '_id': '    '
+                })
+                .expect(400, done);
+        });
+        it('400 - without _id', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .expect(400, done);
+        });
+        it('403 - unauthorized', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id + '/step')
+                .send({
+                    '_id': step._id,
+                    'title': 'Test'
+                })
+                .expect(403, done);
+        });
+        it('403 - as other user', function (done) {
+            request(app)
+                .put(restURL + '/id/' + publicProject._id + '/step')
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .send({
+                    '_id': step._id,
+                    'title': 'Test'
+                })
+                .expect(403, done);
         });
     });
 });

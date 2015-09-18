@@ -174,7 +174,7 @@ define([
     };
 
      /**
-     * @api {get} /user/:id Get User
+     * @api {get} /user/id/:id Get User
      * @apiName GetUser
      * @apiDescription Gets a user (no admins!)
      * @apiGroup User
@@ -224,7 +224,7 @@ define([
     };
 
      /**
-     * @api {delete} /user/:id Remove user
+     * @api {delete} /user/id/:id Remove user
      * @apiName RemoveUser
      * @apiDescription removes a user as admin
      * @apiGroup User

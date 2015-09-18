@@ -35,7 +35,7 @@ define([
             'title': {
                 type: String,
                 validate: function (title) {
-                    if (!title) {
+                    if (!title || !title.replace(/\s/g, '').length) {
                         return false;
                     }
                     return true;
@@ -70,7 +70,7 @@ define([
         }
     };
     /**
-    * @api {post} /project/:id Create Step
+    * @api {post} /project/id/:id/step Create Step
     * @apiName CreateProjectStep
     * @apiDescription create a project step (User)
     * @apiGroup Project
@@ -96,19 +96,21 @@ define([
         params: {
             'title': {
                 type: String,
-                required: true
+                validate: function (title) {
+                    if (!title || !title.replace(/\s/g, '').length) {
+                        return false;
+                    }
+                    return true;
+                }
             },
             'description': {
-                type: String
+                type: String,
+                optional:true
             }
         },
         object: true,
         exec: function (req, res) {
-            if (req.object.steps.length === 10) {
-                return res.status(400).send({
-                    error: 'steps_limit_reached'
-                });
-            }
+            req.object.steps.addToSet(req.params);
 
             req.object.save(function (err, saved) {
                 if (err) {
@@ -128,7 +130,7 @@ define([
         }
     };
     /**
-    * @api {put} /project/:id Update Step
+    * @api {put} /project/id/:id Update Step
     * @apiName UpdateProject
     * @apiDescription Updates a project (as admin, own)
     * @apiGroup Project
@@ -153,14 +155,21 @@ define([
         permissions: [appConfig.permissions.user, appConfig.permissions.admin],
         params: {
             'title': {
-                type: String
+                type: String,
+                validate: function (title) {
+                    if (!title || !title.replace(/\s/g, '').length) {
+                        return false;
+                    }
+                    return true;
+                }
             },
             'description': {
                 type: String,
                 optional: true
             },
             'materials': {
-                type: Array
+                type: Array,
+                optional: true
             },
             'public': {
                 type: Boolean,
@@ -172,6 +181,13 @@ define([
             if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1 && !req.object.user.equals(req.user._id)) {
                 return res.status(403).send();
             }
+            // if materials are set -_> remove all current
+            if (req.params.materials) {
+                req.object.materials.forEach(function (material) {
+                    material.remove();
+                });
+            }
+
             _.extend(req.object, req.params);
 
             req.object.save(function (err, saved) {
@@ -194,7 +210,7 @@ define([
     };
 
     /**
-    * @api {put} /project/:id Update Step
+    * @api {put} /project/id/:id/step Update Step
     * @apiName UpdateProjectStep
     * @apiDescription Updates a project step (as admin, own)
     * @apiGroup Project
@@ -220,17 +236,29 @@ define([
         params: {
             '_id': {
                 type: String,
-                required: true
+                validate: function (_id) {
+                    if (!_id || !_id.replace(/\s/g, '').length) {
+                        return false;
+                    }
+                    return true;
+                }
             },
             'title': {
-                type: String
+                type: String,
+                validate: function (title) {
+                    if (!title || !title.replace(/\s/g, '').length) {
+                        return false;
+                    }
+                    return true;
+                }
             },
             'description': {
                 type: String,
                 optional: true
             },
             'complete': {
-                type: Boolean
+                type: Boolean,
+                optional: true
             }
         },
         object: true,
@@ -238,8 +266,9 @@ define([
             if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1 && !req.object.user.equals(req.user._id)) {
                 return res.status(403).send();
             }
-            var step = req.object.materials.id(req.params._id);
-            if (step) {
+
+            var step = req.object.steps.id(req.params._id);
+            if (!step) {
                 return res.send();
             }
 
@@ -334,7 +363,7 @@ define([
         }
     };
     /**
-    * @api {get} /project/:id Get Project
+    * @api {get} /project/id/:id Get Project
     * @apiName GetProject
     * @apiDescription Gets a project (as admin, own or other public)
     * @apiGroup Project
@@ -427,7 +456,7 @@ define([
     };
 
     /**
-    * @api {delete} /project/:id Remove Project
+    * @api {delete} /project/id/:id Remove Project
     * @apiName RemoveProject
     * @apiDescription Remove a project (as admin, own)
     * @apiGroup Project
@@ -468,7 +497,7 @@ define([
     };
 
     /**
-    * @api {delete} /project/:id?_id=:stepId Remove Step
+    * @api {delete} /project/id/:id?_id=:stepId Remove Step
     * @apiName RemoveProjectStep
     * @apiDescription Removes a project step (as admin, own)
     * @apiGroup Project
