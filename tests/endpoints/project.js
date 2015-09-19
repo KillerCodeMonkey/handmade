@@ -439,7 +439,7 @@ describe('project model', function () {
 
                     expect(data).not.to.be(null);
                     expect(data).to.be.an('object');
-                    expect(data.length).to.be(0);
+                    expect(data.entries.length).to.be(0);
                     done();
                 });
         });
@@ -457,7 +457,7 @@ describe('project model', function () {
 
                     expect(data).not.to.be(null);
                     expect(data).to.be.an('object');
-                    expect(data.length).to.be(1);
+                    expect(data.entries.length).to.be(1);
                     done();
                 });
         });
@@ -475,7 +475,7 @@ describe('project model', function () {
 
                     expect(data).not.to.be(null);
                     expect(data).to.be.an('object');
-                    expect(data.length).to.be(2);
+                    expect(data.entries.length).to.be(2);
                     done();
                 });
         });
@@ -493,7 +493,7 @@ describe('project model', function () {
 
                     expect(data).not.to.be(null);
                     expect(data).to.be.an('object');
-                    expect(data.length).to.be(0);
+                    expect(data.entries.length).to.be(0);
                     done();
                 });
         });
@@ -606,7 +606,7 @@ describe('project model', function () {
                                         return done(err);
                                     }
 
-                                    expect(res.body.length).to.be(1);
+                                    expect(res.body.entries.length).to.be(1);
                                     done();
                                 });
                         });
@@ -633,7 +633,7 @@ describe('project model', function () {
                                 return done(err);
                             }
 
-                            expect(res.body.length).to.be(1);
+                            expect(res.body.entries.length).to.be(1);
                             done();
                         });
                 });
@@ -662,7 +662,7 @@ describe('project model', function () {
                                 return done(err);
                             }
 
-                            expect(res.body.length).to.be(0);
+                            expect(res.body.entries.length).to.be(0);
                             done();
                         });
                 });

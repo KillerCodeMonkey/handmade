@@ -353,14 +353,16 @@ define([
                 };
             }
 
-            Project.find(selector).populate('user', fields).lean().exec(function (err, projects) {
+            Project.getPaged(selector, req.pager, true, false, ['title', 'images', 'user', '_id', 'creationDate'], [{
+                path: 'user',
+                select: fields
+            }], function (err, result) {
                 if (err) {
                     return res.status(500).send({
                         error: err
                     });
                 }
-
-                res.send(projects);
+                return res.send(result);
             });
         }
     };
@@ -581,7 +583,7 @@ define([
     *     HTTP/1.1 403 Forbidden
     */
     rest.createReport = {
-        permissions: [appConfig.permissions.user],
+        permissions: [appConfig.permissions.user, appConfig.permissions.admin],
         object: true,
         params: {
             'abuse': {

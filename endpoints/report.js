@@ -32,12 +32,20 @@ define([
         pager: true,
         models: ['report'],
         exec: function (req, res, Report) {
-            Report.find().sort('-creationDate').lean().exec(function (err, reports) {
+            Report.getPaged({}, req.pager, true, true, [], [{
+                path: 'reporter',
+                select: 'avatar email username _id'
+            }, {
+                path: 'project',
+                select: '_id, title, images, creationDate'
+            }], function (err, result) {
                 if (err) {
-                    return res.status(500).send();
+                    return res.status(500).send({
+                        error: err
+                    });
                 }
 
-                return res.send(reports);
+                return res.send(result);
             });
         }
     };
@@ -64,7 +72,7 @@ define([
     * @apiErrorExample Error-Response:
     *     HTTP/1.1 403 Forbidden
     */
-    rest.remove = {
+    rest.removeOne = {
         permissions: [appConfig.permissions.admin],
         object: true,
         models: [],

@@ -35,52 +35,6 @@ define([
         return q;
     }
 
-    function createPager(User, selector, pager, lean, getAllFields) {
-        selector = selector || {};
-        pager = pager || {};
-        var q = new Promise(),
-            populates = [],
-            filter = pager.filter || {};
-
-        selector.permissions = {
-            $nin: [appConfig.permissions.admin] // remove admins
-        };
-
-        // if there is a pager
-        if (pager) {
-            // if there are filter
-            if (filter.username) {
-                selector.username = new RegExp(helper.regExpEscape(filter.username.toString()), 'i');
-            }
-            if (filter.email) {
-                selector.email = new RegExp(helper.regExpEscape(filter.email.toString()), 'i');
-            }
-            if (!pager.orderBy || (typeof pager.orderBy === 'string' && !User.schema.path(pager.orderBy))) {
-                pager.orderBy = 'normalizedUsername';
-            }
-            if (pager.orderDesc === undefined) {
-                pager.orderDesc = false;
-            }
-        }
-
-        helper.getPage(User, selector, populates, pager.limit, pager.skip, !getAllFields ? fields.join(' ') : undefined, pager.orderBy, pager.orderDesc, lean).then(function (results) {
-            var rows = results[0],
-                counter = results[1];
-
-            pager.count = counter;
-            if (pager.limit) {
-                pager.pages = Math.floor(pager.count / pager.limit);
-                if (pager.count % pager.limit) {
-                    pager.pages = pager.pages + 1;
-                }
-            }
-
-            q.resolve([rows, pager]);
-        }, q.reject);
-
-        return q;
-    }
-
     /**
     * @api {get} /user Get User list
     * @apiName GetUsers
@@ -124,15 +78,13 @@ define([
             if (req.user && req.user.permissions.indexOf(appConfig.permissions.admin) === -1) {
                 getAllFields = false;
             }
-            createPager(User, selector, req.pager, undefined, getAllFields).then(function (results) {
-                res.send({
-                    entries: results[0],
-                    pager: results[1]
-                });
-            }, function (err) {
-                res.status(500).send({
-                    error: err
-                });
+            User.getPaged(selector, req.pager, undefined, getAllFields, fields, function (err, result) {
+                if (err) {
+                    return res.status(500).send({
+                        error: err
+                    });
+                }
+                return res.send(result);
             });
         }
     };

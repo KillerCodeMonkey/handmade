@@ -5,8 +5,9 @@ define([
     'appConfig',
     'models/image',
     'models/project',
-    'models/authentication'
-], function (mongoose, crypto, appConfig, image, project, authentication) {
+    'models/authentication',
+    'util/helper'
+], function (mongoose, crypto, appConfig, image, project, authentication, helper) {
     'use strict';
 
     var Schema = mongoose.Schema,
@@ -15,7 +16,7 @@ define([
         User = new Schema({
             username: {
                 type: String,
-                unqiue: true
+                unique: true
             },
             normalizedUsername: String,
             email: {
@@ -55,6 +56,52 @@ define([
 
     User.methods.encryptPassword = function (password) {
         return crypto.pbkdf2Sync(password, this.salt, 10000, 512).toString('hex');
+    };
+
+    User.statics.getPaged = function (selector, pager, lean, getAllFields, fields, cb) {
+        selector = selector || {};
+        pager = pager || {};
+        var populates = [],
+            filter = pager.filter || {};
+
+        selector.permissions = {
+            $nin: [appConfig.permissions.admin] // remove admins
+        };
+
+        // if there is a pager
+        if (pager) {
+            // if there are filter
+            if (filter.username) {
+                selector.username = new RegExp(helper.regExpEscape(filter.username.toString()), 'i');
+            }
+            if (filter.email) {
+                selector.email = new RegExp(helper.regExpEscape(filter.email.toString()), 'i');
+            }
+            if (!pager.orderBy || (typeof pager.orderBy === 'string' && !User.path(pager.orderBy))) {
+                pager.orderBy = 'normalizedUsername';
+            }
+            if (pager.orderDesc === undefined) {
+                pager.orderDesc = false;
+            }
+        }
+
+        helper.getPage(this, selector, populates, pager.limit, pager.skip, !getAllFields ? fields.join(' ') : undefined, pager.orderBy, pager.orderDesc, lean).then(function (results) {
+            var rows = results[0],
+                counter = results[1];
+
+            pager.count = counter;
+            if (pager.limit) {
+                pager.pages = Math.floor(pager.count / pager.limit);
+                if (pager.count % pager.limit) {
+                    pager.pages = pager.pages + 1;
+                }
+            }
+
+            cb(null, {
+                entries: rows,
+                pager: pager
+            });
+        }, cb);
     };
 
     User.virtual('userId')
