@@ -1,7 +1,9 @@
 define([
     'appConfig',
-    'underscore'
-], function (appConfig, _) {
+    'underscore',
+    'node-promise',
+    'util/helper'
+], function (appConfig, _, promise, helper) {
     'use strict';
 
     var rest = {},
@@ -618,6 +620,291 @@ define([
         }
     };
 
+    /**
+    * @api {post} /project/id/:id/image Upload Image
+    * @apiName UploadImage
+    * @apiDescription upload a project image
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission User
+    * @apiSuccess {Object} user the user object.
+    *
+    * @apiSuccessExample Success-Response:
+    *     HTTP/1.1 200 OK
+    *     {
+    *       "_id": "507f191e810c19729de860ea",
+    *       "title": "test",
+    *       "images": [{...}]
+    *     }
+    *
+    * @apiError (Error 5xx) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    */
+    rest.uploadImage = {
+        file: true,
+        object: true,
+        permissions: [appConfig.permissions.user],
+        exec: function (req, res) {
+            var task = [];
+            if (!req.object.user.equals(req.user._id)) {
+                return res.status(403).send();
+            }
+            if (req.object.images.length) {
+                task.push(helper.imageRemove(req.object.images[0]));
+            }
+            promise.all(task).then(function () {
+                var opts = {
+                    name: 'project',
+                    field: 'image',
+                    sizes: [{
+                        width: 160,
+                        height: null
+                    }, {
+                        width: 320,
+                        height: null
+                    }, {
+                        width: 640,
+                        height: null
+                    }, {
+                        width: 1280,
+                        height: null
+                    }],
+                    thumb: true
+                };
+                if (task.length) {
+                    req.object.images[0].remove();
+                }
+                req.object.save(function (err) {
+                    if (err) {
+                        return res.status(500).send({
+                            error: err
+                        });
+                    }
+                    helper.imageUpload(req.originalRequest, 'projects/' + req.object._id, opts).then(function (imageObject) {
+                        req.object.images.addToSet(imageObject);
+                        req.object.save(function (err, saved) {
+                            if (err) {
+                                helper.imageRemove(imageObject);
+                                return res.status(500).send({
+                                    error: err
+                                });
+                            }
+                            res.send(saved.toObject());
+                        });
+                    }, function (err) {
+                        return res.status(500).send({
+                            error: err
+                        });
+                    });
+                });
+            });
+        }
+    };
+
+    /**
+    * @api {delete} /project/id/:id/image Remove image
+    * @apiName RemoveImage
+    * @apiDescription removes project image
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission user
+    * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+    * @apiHeaderExample {json} Authorization-Header-Example:
+                     { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+    *
+    * @apiSuccessExample Success-Response:
+    *     HTTP/1.1 200 OK
+    *
+    * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    */
+    rest.removeImage = {
+        permissions: [appConfig.permissions.user],
+        object: true,
+        exec: function (req, res) {
+            if (!req.object.user.equals(req.user._id)) {
+                return res.status(403).send();
+            }
+            if (!req.object.images.length) {
+                return res.send();
+            }
+            helper.imageRemove(req.object.images[0]).then(function () {
+                req.object.images[0].remove();
+                req.object.save(function (err) {
+                    if (err) {
+                        return res.status(500).send({
+                            error: err
+                        });
+                    }
+                    res.send();
+                });
+            });
+        }
+    };
+
+    /**
+    * @api {post} /project/id/:id/stepImage?_id=:stepId Upload Step Image
+    * @apiName UploadStepImage
+    * @apiDescription upload a project step image
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission User
+    * @apiSuccess {Object} user the user object.
+    *
+    * @apiSuccessExample Success-Response:
+    *     HTTP/1.1 200 OK
+    *     {
+    *       "_id": "507f191e810c19729de860ea",
+    *       "title": "test",
+    *       "images": [{...}]
+    *     }
+    *
+    * @apiError (Error 5xx) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    */
+    rest.uploadImage = {
+        file: true,
+        object: true,
+        permissions: [appConfig.permissions.user],
+        exec: function (req, res) {
+            var task = [];
+            if (!req.object.user.equals(req.user._id)) {
+                return res.status(403).send();
+            }
+            var step = req.object.steps.id(req.params._id);
+            if (!step) {
+                return res.send();
+            }
+
+            if (step.images.length) {
+                task.push(helper.imageRemove(step.images[0]));
+            }
+            promise.all(task).then(function () {
+                var opts = {
+                    name: step._id,
+                    field: 'image',
+                    sizes: [{
+                        width: 160,
+                        height: null
+                    }, {
+                        width: 320,
+                        height: null
+                    }, {
+                        width: 640,
+                        height: null
+                    }, {
+                        width: 1280,
+                        height: null
+                    }],
+                    thumb: true
+                };
+                if (task.length) {
+                    step.images[0].remove();
+                }
+                step.save(function (err) {
+                    if (err) {
+                        return res.status(500).send({
+                            error: err
+                        });
+                    }
+                    helper.imageUpload(req.originalRequest, 'projects/' + req.object._id + '/steps/', opts).then(function (imageObject) {
+                        step.images.addToSet(imageObject);
+                        step.save(function (err, saved) {
+                            if (err) {
+                                helper.imageRemove(imageObject);
+                                return res.status(500).send({
+                                    error: err
+                                });
+                            }
+                            req.object.save(function () {
+                                res.send(saved.toObject());
+                            });
+                        });
+                    }, function (err) {
+                        return res.status(500).send({
+                            error: err
+                        });
+                    });
+                });
+            });
+        }
+    };
+
+    /**
+    * @api {delete} /project/id/:id/stepImage?_id=:stepId Remove step image
+    * @apiName RemoveStepImage
+    * @apiDescription removes project step image
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission user
+    * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+    * @apiHeaderExample {json} Authorization-Header-Example:
+                     { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+    *
+    * @apiSuccessExample Success-Response:
+    *     HTTP/1.1 200 OK
+    *
+    * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    */
+    rest.removeStepImage = {
+        permissions: [appConfig.permissions.user],
+        params: {
+            '_id': {
+                type: String,
+                regex: /[^\s]+/g
+            }
+        },
+        object: true,
+        exec: function (req, res) {
+            if (!req.object.user.equals(req.user._id)) {
+                return res.status(403).send();
+            }
+
+            var step = req.object.steps.id(req.params._id);
+            if (step) {
+                return res.send();
+            }
+
+            if (!step.images.length) {
+                return res.send();
+            }
+            helper.imageRemove(step.images[0]).then(function () {
+                step.images[0].remove();
+                step.save(function (err) {
+                    if (err) {
+                        return res.status(500).send({
+                            error: err
+                        });
+                    }
+                    req.object.save(function () {
+                        res.send();
+                    });
+                });
+            });
+        }
+    };
+
     return {
         v1: {
             post: {
@@ -626,7 +913,8 @@ define([
                 // create new step
                 'step': rest.createStep,
                 // create report
-                'report': rest.createReport
+                'report': rest.createReport,
+                'image': rest.uploadImage
             },
             put: {
                 'object': rest.update,
@@ -639,7 +927,8 @@ define([
             'delete': {
                 '': rest.remove,
                 'object': rest.removeOne,
-                'step': rest.removeStep
+                'step': rest.removeStep,
+                'image': rest.removeImage
             }
         }
     };

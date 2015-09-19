@@ -860,7 +860,7 @@ define([
                 if (task.length) {
                     req.user.avatar[0].remove();
                 }
-                req.user.save(function (err, saved) {
+                req.user.save(function (err) {
                     if (err) {
                         return res.status(500).send({
                             error: err
