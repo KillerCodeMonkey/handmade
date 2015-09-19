@@ -834,7 +834,11 @@ define([
         file: true,
         permissions: [appConfig.permissions.user],
         exec: function (req, res) {
-            helper.imageRemove(req.user.avatar[0]).then(function () {
+            var task = [];
+            if (req.user.avatar.length) {
+                task.push(helper.imageRemove(req.user.avatar[0]));
+            }
+            promise.all(task).then(function () {
                 var opts = {
                     name: 'avatar',
                     field: 'image',
@@ -853,21 +857,30 @@ define([
                     }],
                     thumb: true
                 };
-                req.user.avatar[0].remove();
-                helper.imageUpload(req.originalRequest, 'users/' + req.user._id, opts).then(function (imageObject) {
-                    req.user.avatar.addToSet(imageObject);
-                    req.user.save(function (err, saved) {
-                        if (err) {
-                            helper.imageRemove(imageObject);
-                            return res.status(500).send({
-                                error: err
-                            });
-                        }
-                        res.send(saved.toObject());
-                    });
-                }, function (err) {
-                    return res.status(500).send({
-                        error: err
+                if (task.length) {
+                    req.user.avatar[0].remove();
+                }
+                req.user.save(function (err, saved) {
+                    if (err) {
+                        return res.status(500).send({
+                            error: err
+                        });
+                    }
+                    helper.imageUpload(req.originalRequest, 'users/' + req.user._id, opts).then(function (imageObject) {
+                        req.user.avatar.addToSet(imageObject);
+                        req.user.save(function (err, saved) {
+                            if (err) {
+                                helper.imageRemove(imageObject);
+                                return res.status(500).send({
+                                    error: err
+                                });
+                            }
+                            res.send(saved.toObject());
+                        });
+                    }, function (err) {
+                        return res.status(500).send({
+                            error: err
+                        });
                     });
                 });
             });

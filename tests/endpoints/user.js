@@ -1,6 +1,7 @@
 /*globals before, after, it, describe, process, require */
 var request = require('supertest'),
     expect = require('expect.js'),
+    fs = require('fs'),
     require = require('../../config/require'),
     testHandler = require('util/testHandler'),
     app,
@@ -652,6 +653,92 @@ describe('user model', function () {
                 .send({
                     email: user.email
                 })
+                .expect(403, done);
+        });
+    });
+    describe('POST /user/avatar - set new avatar', function () {
+        it('200', function (done) {
+            var filename = 'racoon.jpg',
+                path = process.cwd() + '/util/files/' + filename;
+
+            request(app)
+                .post(restURL + '/avatar')
+                .set('Authorization', 'Bearer ' + user.accessToken)
+                .attach('image', path)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+                    var data = res.body;
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(data.avatar.length).to.be(1);
+                    var avatar = data.avatar[0];
+                    expect(avatar.variants.length).to.be.eql(5);
+                    expect(avatar.path).to.eql('users/' + user._id + '/avatar.jpg');
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + avatar.path)).to.be(true);
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + avatar.variants[0].path)).to.be(true);
+                    done();
+                });
+        });
+        it('upload another time', function (done) {
+            var filename = 'racoon.jpg',
+                path = process.cwd() + '/util/files/' + filename;
+            request(app)
+                .post(restURL + '/avatar')
+                .set('Authorization', 'Bearer ' + user.accessToken)
+                .attach('image', path)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(data.avatar.length).to.be(1);
+                    var avatar = data.avatar[0];
+                    expect(avatar.variants.length).to.be.eql(5);
+                    expect(avatar.path).to.eql('users/' + user._id + '/avatar.jpg');
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + avatar.path)).to.be(true);
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + avatar.variants[0].path)).to.be(true);
+                    user.avatar = avatar;
+                    done();
+                });
+        });
+        it('403 - without login', function (done) {
+            var filename = 'racoon.jpg',
+                path = process.cwd() + '/util/files/' + filename;
+            request(app)
+                .post(restURL + '/avatar')
+                .attach('image', path)
+                .expect(403, done);
+        });
+    });
+    describe('DELETE /user/avatar - delete avatar', function () {
+        it('200', function (done) {
+            request(app)
+                .del(restURL + '/avatar')
+                .set('Authorization', 'Bearer ' + user.accessToken)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + user.avatar.path)).to.be(false);
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + user.avatar.variants[0].path)).to.be(false);
+                    done();
+                });
+        });
+        it('403 - without login', function (done) {
+            request(app)
+                .del(restURL + '/avatar')
                 .expect(403, done);
         });
     });
