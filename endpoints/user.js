@@ -804,10 +804,123 @@ define([
         }
     };
 
+    /**
+    * @api {post} /user/avatar Upload Avatar
+    * @apiName UploadAvatar
+    * @apiDescription upload an user image
+    * @apiGroup User
+    * @apiVersion 1.0.0
+    * @apiPermission User
+    * @apiSuccess {Object} user the user object.
+    *
+    * @apiSuccessExample Success-Response:
+    *     HTTP/1.1 200 OK
+    *     {
+    *       "username": "bengt",
+    *       "_id": "507f191e810c19729de860ea",
+    *       "email": "bengtler@gmail.com",
+    *       "avatar": [{...}]
+    *     }
+    *
+    * @apiError (Error 5xx) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    */
+    rest.uploadAvatar = {
+        file: true,
+        permissions: [appConfig.permissions.user],
+        exec: function (req, res) {
+            helper.imageRemove(req.user.avatar[0]).then(function () {
+                var opts = {
+                    name: 'avatar',
+                    field: 'image',
+                    sizes: [{
+                        width: 160,
+                        height: null
+                    }, {
+                        width: 320,
+                        height: null
+                    }, {
+                        width: 640,
+                        height: null
+                    }, {
+                        width: 1280,
+                        height: null
+                    }],
+                    thumb: true
+                };
+                req.user.avatar[0].remove();
+                helper.imageUpload(req.originalRequest, 'users/' + req.user._id, opts).then(function (imageObject) {
+                    req.user.avatar.addToSet(imageObject);
+                    req.user.save(function (err, saved) {
+                        if (err) {
+                            helper.imageRemove(imageObject);
+                            return res.status(500).send({
+                                error: err
+                            });
+                        }
+                        res.send(saved.toObject());
+                    });
+                }, function (err) {
+                    return res.status(500).send({
+                        error: err
+                    });
+                });
+            });
+        }
+    };
+
+    /**
+    * @api {delete} /user/avatar Remove avatar
+    * @apiName RemoveAvatar
+    * @apiDescription removes user image
+    * @apiGroup User
+    * @apiVersion 1.0.0
+    * @apiPermission user
+    * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+    * @apiHeaderExample {json} Authorization-Header-Example:
+                     { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+    *
+    * @apiSuccessExample Success-Response:
+    *     HTTP/1.1 200 OK
+    *
+    * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    */
+    rest.removeAvatar = {
+        permissions: [appConfig.permissions.user],
+        exec: function (req, res) {
+            if (!req.user.avatar.length) {
+                return res.send();
+            }
+            helper.imageRemove(req.user.avatar[0]).then(function () {
+                req.user.avatar[0].remove();
+                req.user.save(function (err) {
+                    if (err) {
+                        return res.status(500).send({
+                            error: err
+                        });
+                    }
+                    res.send();
+                });
+            });
+        }
+    };
+
     return {
         v1: {
             post: {
-                '': rest.register
+                '': rest.register,
+                'avatar': rest.uploadAvatar
             },
             get: {
                 'account': rest.account,
@@ -822,7 +935,8 @@ define([
                 'account': rest.update
             },
             'delete': {
-                'object': rest.remove
+                'object': rest.remove,
+                'avatar': rest.removeAvatar
             }
         }
     };

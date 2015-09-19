@@ -1,11 +1,14 @@
 /*global define*/
 define([
+    'mkdirp',
     'node-promise',
     'path',
     'fs',
     'underscore'
-], function (promise, path, fs, _) {
+], function (mkdirp, promise, path, fs, _) {
     'use strict';
+
+    var gm = require('gm').subClass({imageMagick: true});
 
     var Promise = promise.Promise;
 
@@ -115,6 +118,124 @@ define([
         promise.all(deleteTasks).then(function () {
             q.resolve();
         });
+
+        return q;
+    }
+
+    function resize(originalFile, relativePath, width, height, path, name, extension, image) {
+        var q = new Promise(),
+            filePath = path + name + '_' + width + 'x' + height + extension;
+        gm(originalFile)
+            .resize(width, height, '^>')
+            .gravity('Center')
+            .write(filePath, function (err) {
+                if (err) {
+                    return q.reject(err);
+                }
+                image.variants.push({
+                    width: width,
+                    path: relativePath + name + '_' + width + 'x' + height + extension
+                });
+                q.resolve();
+            });
+
+        return q;
+    }
+
+    function thumb(originalFile, relativePath, width, height, path, name, extension, image) {
+        var q = new Promise(),
+            filePath = path + name + '_' + width + 'x' + height + extension;
+
+        gm(originalFile)
+            .quality(80)
+            .resize(width, height, '>')
+            .gravity('Center')
+            .noProfile()
+            .write(filePath, function (err) {
+                if (err) {
+                    return q.reject(err);
+                }
+                image.variants.push({
+                    width: width,
+                    path: relativePath  + name + '_' + width + 'x' + height + extension
+                });
+                q.resolve();
+            });
+
+        return q;
+    }
+
+    function upload(fieldname, file, filename, targetDir, options) {
+        var q = new Promise(),
+            resizeTasks = [],
+            fstream,
+            image = {
+                variants: []
+            },
+            i = 0,
+            extension = path.extname(filename),
+            fileName = options.name || path.basename(filename, extension),
+            relative = targetDir + '/',
+            basePath = process.cwd() + '/static/public/' + relative;
+
+        // check if request has restriction for fieldname
+        if (!options.fieldname || options.fieldname === fieldname) {
+            mkdirp(basePath, function (err) {
+                if (err) {
+                    return q.reject(err);
+                }
+                //Path where image will be uploaded
+                var fullPath = basePath + '/' + fileName + extension;
+                // create writestream to write data-stream to file
+                fstream = fs.createWriteStream(fullPath);
+                // pipe stream
+                file.pipe(fstream);
+                // upload finished
+                fstream.on('close', function () {
+                    // create image object
+                    gm(fullPath).size(function (err, size) {
+                        if (err) {
+                            promise.all([deleteFile(fullPath)]).then(function () {
+                                return q.reject(err);
+                            });
+                        }
+                        if (!size || !size.width || !size.height) {
+                            promise.all([deleteFile(fullPath)]).then(function () {
+                                return q.reject('missing_image_size');
+                            });
+                        }
+
+                        image = {
+                            path: relative + fileName + extension,
+                            width: size.width,
+                            height: size.height,
+                            variants: []
+                        };
+
+                        // check if thumbnail should created
+                        if (options.thumb) {
+                            resizeTasks.push(thumb(fullPath, relative, 80, 80, basePath, fileName, extension, image));
+                        }
+                        // check if there are sizes to generate
+                        if (options.sizes && options.sizes.length) {
+                            // for each size resize original and write it to own file
+                            for (i; i < options.sizes.length; i = i + 1) {
+                                resizeTasks.push(resize(fullPath, relative, options.sizes[i].width, options.sizes[i].height, basePath, fileName, extension, image, options.compress));
+                            }
+                        }
+                        promise.allOrNone(resizeTasks).then(function () {
+                            q.resolve(image);
+                        }, function (err) {
+                            promise.all([imageRemove(image)]).then(function () {
+                                q.reject(err);
+                            });
+                        });
+                    });
+                });
+            });
+        } else {
+            q.resolve(image);
+        }
 
         return q;
     }
@@ -305,6 +426,40 @@ define([
 
             return q;
         },
-        imageRemove: imageRemove
+        imageRemove: imageRemove,
+        /*
+           options: {
+               name - optional target name (without extention)
+               fieldame - optional fieldname (like 'image') then only the file of the field image is written
+               thumb - optional flag if thumbnail should generated
+               sizes: [{
+                   width: 400,
+                   height: 300
+               }]
+           }
+        */
+        imageUpload: function (req, targetDir, options, multiple) {
+            var q = new Promise(),
+                uploadTasks = [];
+
+            // handle upload
+            req.pipe(req.busboy);
+            req.busboy.on('file', function (fieldname, file, filename) {
+                if (!uploadTasks.length || multiple) {
+                    uploadTasks.push(upload(fieldname, file, filename, targetDir, options));
+                }
+            });
+
+            req.busboy.on('finish', function () {
+                promise.allOrNone(uploadTasks).then(function (imageObjects) {
+                    if (uploadTasks.length === 1) {
+                        return q.resolve(imageObjects[0]);
+                    }
+                    q.resolve(imageObjects);
+                }, q.reject);
+            });
+
+            return q;
+        }
     };
 });

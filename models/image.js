@@ -14,8 +14,13 @@ define([
                 type: Number,
                 required: true
             },
+            height: {
+                type: Number,
+                required: true
+            },
             date: {
                 type: Date,
+                required: true,
                 'default': Date.now
             },
             variants: [{

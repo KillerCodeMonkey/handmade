@@ -28,6 +28,7 @@
     ]
   },
   "dependencies": {
+    "gm": "~1.19.0",
     "requirejs": "2.1.20",
     "express": "4.13.3",
     "body-parser": "1.13.3",
