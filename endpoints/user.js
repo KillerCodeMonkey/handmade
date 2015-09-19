@@ -452,7 +452,7 @@ define([
                         error: err
                     });
                 }
-                if (!user) {
+                if (!user || !user.active) {
                     return res.status(404).send({
                         error: 'user_not_found'
                     });

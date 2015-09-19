@@ -343,6 +343,7 @@ define([
 
             if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1 && (req.params.me === 'false' || !req.params.me)) {
                 selector.public = true;
+                selector.active = true;
             }
             if (req.params.me === 'true') {
                 selector.user = req.user._id;
@@ -405,6 +406,9 @@ define([
         object: true,
         exec: function (req, res) {
             if (req.object.user.equals(req.user._id) || req.object.public || req.user.permissions.indexOf(appConfig.permissions.admin) !== -1) {
+                if (!req.object.active) {
+                    return res.status(404).send();
+                }
                 return req.object.populate('user', fields, function (err, populated) {
                     if (err) {
                         return res.status(500).send({

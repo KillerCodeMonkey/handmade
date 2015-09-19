@@ -164,7 +164,7 @@ define([
                         error: 'user_not_exists'
                     });
                 }
-                if (!user.checkPassword(req.params.password)) {
+                if (!user.active || !user.checkPassword(req.params.password)) {
                     return res.status(400).send({
                         error: 'invalid_login_password_combination'
                     });
