@@ -415,7 +415,8 @@ describe('user model', function () {
         var object = {
             email: 'nankazu@testsenfler.com',
             newPassword: '123456ab',
-            username: 'schnitterich'
+            username: 'schnitterich',
+            active: false
         };
         it('200', function (done) {
             object.password = user.password;
@@ -433,6 +434,7 @@ describe('user model', function () {
                     expect(data).not.to.be(null);
                     expect(data).to.be.an('object');
                     expect(data.email).to.be(object.email);
+                    expect(data.active).to.be(true);
                     expect(data.firstName).to.be(object.firstName);
                     expect(data.lastName).to.be(object.lastName);
                     expect(data.username).to.be(object.username);

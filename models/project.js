@@ -60,6 +60,11 @@ define([
                 type: Date,
                 'default': Date.now
             },
+            active: {
+                type: Boolean,
+                required: true,
+                'default': true
+            },
             data: {}
         }),
         Model = mongoose.model('Project', Project);

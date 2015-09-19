@@ -45,6 +45,11 @@ define([
             website: String,
             bio: String,
             avatar: [image.schema],
+            active: {
+                type: Boolean,
+                required: true,
+                'default': true
+            },
             data: {}
         });
 
@@ -74,6 +79,29 @@ define([
             this.normalizedUsername = this.username.toLowerCase();
         }
         next();
+    });
+
+    User.post('save', function (user) {
+        // if user is not active
+        if (!user.active) {
+            // deactivate projects
+            project.model.update({
+                user: user._id
+            }, {
+                active: false
+            }).exec();
+            // remove authentications
+            authentication.model.remove({
+                user: user._id
+            }).exec();
+        } else {
+            // activate projects
+            project.model.update({
+                user: user._id
+            }, {
+                active: true
+            }).exec();
+        }
     });
 
     User.post('remove', function (user) {

@@ -642,7 +642,7 @@ define([
      * @api {put} /user/account Update User
      * @apiName UpdateAccount
      * @apiDescription Update current loggedin user
-     * @apiGroup User
+     * @apiGroup User; Admin
      * @apiVersion 1.0.0
      * @apiPermission User
      * @apiParam {String} [website] optional website or blog link
@@ -651,6 +651,7 @@ define([
      * @apiParam {String} [password] account password to set new email, password
      * @apiParam {String} [newPassword] new account password
      * @apiParam {String} [username] set unique username
+     * @apiParam {Boolean} [active] activate/deactivate as admin
      * @apiParamExample {json} request body
                    { "email": "bengtler@gmail.com",
                      "username": "killercodemonkey",
@@ -749,6 +750,10 @@ define([
             'website': {
                 type: String,
                 optional: true
+            },
+            'active': {
+                type: Boolean,
+                optional: true
             }
         },
         permissions: [appConfig.permissions.user],
@@ -759,6 +764,11 @@ define([
                 setUsername = false,
                 setEmail = false,
                 tasks = [];
+
+            // only admin can activate or deactivate users
+            if (req.user.permissions.indexOf(appConfig.permissions.admin) === -1) {
+                delete req.params.active;
+            }
 
             // check if old password was sent if new email or/and new password
             if ((params.email || params.newPassword) && !params.password) {
