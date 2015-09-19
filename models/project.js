@@ -1,7 +1,8 @@
 define([
     'mongoose',
-    'models/image'
-], function (mongoose, image) {
+    'models/image',
+    'models/report'
+], function (mongoose, image, report) {
     'use strict';
 
     var Schema = mongoose.Schema,
@@ -79,6 +80,10 @@ define([
         project.steps.forEach(function (step) {
             step.remove();
         });
+        report.model.remove({
+            user: project.user,
+            project: project._id
+        }).exec();
     });
 
     Step.post('remove', function (step) {

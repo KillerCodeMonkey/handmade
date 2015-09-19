@@ -206,6 +206,49 @@ describe('project model', function () {
                 .expect(403, done);
         });
     });
+    describe('POST /project/id/:id/report - create report for a project', function () {
+        it('200', function (done) {
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/report')
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .send({
+                    'abuse': 'Sexual Content!'
+                })
+                .expect(200, done);
+        });
+        it('400 - empty abuse', function (done) {
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/report')
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .send({
+                    'abuse': ''
+                })
+                .expect(400, done);
+        });
+        it('400 - whitespace abuse', function (done) {
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/report')
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .send({
+                    'abuse': '    '
+                })
+                .expect(400, done);
+        });
+        it('400 - without abuse', function (done) {
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/report')
+                .set('Authorization', 'Bearer ' + testuser2.accessToken)
+                .expect(400, done);
+        });
+        it('403 - unauthorized', function (done) {
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/report')
+                .send({
+                    'abuse': 'Test'
+                })
+                .expect(403, done);
+        });
+    });
     describe('PUT /project/id/:id - update project', function () {
         it('200', function (done) {
             request(app)

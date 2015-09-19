@@ -105,7 +105,7 @@ define([
             },
             'description': {
                 type: String,
-                optional:true
+                optional: true
             }
         },
         object: true,
@@ -334,7 +334,7 @@ define([
                 type: String,
                 optional: true,
                 query: true,
-                regex: /^true|false$/,
+                regex: /^true|false$/
             }
         },
         pager: true,
@@ -558,13 +558,73 @@ define([
         }
     };
 
+    /**
+    * @api {post} /project/id/:id/report Create Project report
+    * @apiName CreateReport
+    * @apiDescription Creates a report for a project (User)
+    * @apiGroup Project
+    * @apiVersion 1.0.0
+    * @apiPermission authorized
+    * @apiHeader {String} Authorization Set TOKENTYPE ACCESSTOKEN for possible authorization
+    * @apiHeaderExample {json} Authorization-Header-Example:
+                     { "Authorization": "Bearer mF_9.B5f-4.1JqM" }
+    * @apiError (Error 500) InternalServerError An error while processing mongoDB query occurs.
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 500 Internal Server Error
+    *     {
+    *       "error": "MONGODB ERROR OBJECT"
+    *     }
+    * @apiError (Error 403) Forbidden No access to this project
+    *
+    * @apiErrorExample Error-Response:
+    *     HTTP/1.1 403 Forbidden
+    */
+    rest.createReport = {
+        permissions: [appConfig.permissions.user],
+        object: true,
+        params: {
+            'abuse': {
+                type: String,
+                validate: function (abuse) {
+                    if (!abuse || !abuse.replace(/\s/g, '').length) {
+                        return false;
+                    }
+                    return true;
+                }
+            }
+        },
+        models: ['report'],
+        exec: function (req, res, Report) {
+            if (req.object.user.equals(req.user._id)) {
+                return res.send();
+            }
+            req.params.reporter = req.user._id;
+            req.params.project = req.object._id;
+
+            var newReport = new Report(req.params);
+
+            newReport.save(function (err) {
+                if (err) {
+                    return res.status(500).send({
+                        error: err
+                    });
+                }
+
+                return res.send();
+            });
+        }
+    };
+
     return {
         v1: {
             post: {
                 // create new project
                 '': rest.create,
                 // create new step
-                'step': rest.createStep
+                'step': rest.createStep,
+                // create report
+                'report': rest.createReport
             },
             put: {
                 'object': rest.update,
