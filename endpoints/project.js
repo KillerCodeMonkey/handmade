@@ -777,7 +777,7 @@ define([
     *       "error": "MONGODB ERROR OBJECT"
     *     }
     */
-    rest.uploadImage = {
+    rest.uploadStepImage = {
         file: true,
         object: true,
         permissions: [appConfig.permissions.user],
@@ -914,7 +914,8 @@ define([
                 'step': rest.createStep,
                 // create report
                 'report': rest.createReport,
-                'image': rest.uploadImage
+                'image': rest.uploadImage,
+                'stepImage': rest.uploadStepImage
             },
             put: {
                 'object': rest.update,
@@ -928,6 +929,7 @@ define([
                 '': rest.remove,
                 'object': rest.removeOne,
                 'step': rest.removeStep,
+                'stepImage': rest.removeStepImage,
                 'image': rest.removeImage
             }
         }

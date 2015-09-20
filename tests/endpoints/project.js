@@ -1,6 +1,7 @@
 /*globals before, after, it, describe, process, require */
 var request = require('supertest'),
     expect = require('expect.js'),
+    fs = require('fs'),
     require = require('../../config/require'),
     testHandler = require('util/testHandler'),
     app,
@@ -529,6 +530,93 @@ describe('project model', function () {
         it('403 - unauthorized', function (done) {
             request(app)
                 .get(restURL + '/id/' + publicProject._id)
+                .expect(403, done);
+        });
+    });
+    describe('POST /project/image - set new project image', function () {
+        it('200', function (done) {
+            var filename = 'racoon.jpg',
+                path = process.cwd() + '/util/files/' + filename;
+
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/image')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .attach('image', path)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+                    var data = res.body;
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+
+                    expect(data.images.length).to.be(1);
+                    var image = data.images[0];
+                    expect(image.variants.length).to.be.eql(5);
+                    expect(image.path).to.eql('projects/' + data._id + '/project.jpg');
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + image.path)).to.be(true);
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + image.variants[0].path)).to.be(true);
+                    done();
+                });
+        });
+        it('upload another time', function (done) {
+            var filename = 'racoon.jpg',
+                path = process.cwd() + '/util/files/' + filename;
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/image')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .attach('image', path)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(data.images.length).to.be(1);
+                    var image = data.images[0];
+                    expect(image.variants.length).to.be.eql(5);
+                    expect(image.path).to.eql('projects/' + publicProject._id + '/project.jpg');
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + image.path)).to.be(true);
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + image.variants[0].path)).to.be(true);
+                    publicProject.image = image;
+                    done();
+                });
+        });
+        it('403 - without login', function (done) {
+            var filename = 'racoon.jpg',
+                path = process.cwd() + '/util/files/' + filename;
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/image')
+                .attach('image', path)
+                .expect(403, done);
+        });
+    });
+    describe('DELETE /project/image - delete image', function () {
+        it('200', function (done) {
+            request(app)
+                .del(restURL + '/id/' + publicProject._id + '/image')
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + publicProject.image.path)).to.be(false);
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + publicProject.image.variants[0].path)).to.be(false);
+                    done();
+                });
+        });
+        it('403 - without login', function (done) {
+            request(app)
+                .del(restURL + '/id/' + publicProject._id + '/image')
                 .expect(403, done);
         });
     });
