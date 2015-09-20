@@ -620,6 +620,94 @@ describe('project model', function () {
                 .expect(403, done);
         });
     });
+    describe('POST /project/id/:id/stepImage?_id=:stepId - set new project image', function () {
+        it('200', function (done) {
+            var filename = 'racoon.jpg',
+                path = process.cwd() + '/util/files/' + filename;
+
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/stepImage?_id=' + step._id)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .attach('image', path)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+                    var data = res.body;
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+
+                    expect(data.steps[0].images.length).to.be(1);
+                    var image = data.steps[0].images[0];
+                    expect(image.variants.length).to.be.eql(5);
+                    expect(image.path).to.eql('projects/' + data._id + '/steps/' + step._id + '.jpg');
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + image.path)).to.be(true);
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + image.variants[0].path)).to.be(true);
+                    done();
+                });
+        });
+        it('upload another time', function (done) {
+            var filename = 'racoon.jpg',
+                path = process.cwd() + '/util/files/' + filename;
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/stepImage?_id=' + step._id)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .attach('image', path)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    expect(data.steps[0].images.length).to.be(1);
+                    var image = data.steps[0].images[0];
+                    expect(image.variants.length).to.be.eql(5);
+                    expect(image.path).to.eql('projects/' + data._id + '/steps/' + step._id + '.jpg');
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + image.path)).to.be(true);
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + image.variants[0].path)).to.be(true);
+                    step.image = image;
+                    done();
+                });
+        });
+        it('403 - without login', function (done) {
+            var filename = 'racoon.jpg',
+                path = process.cwd() + '/util/files/' + filename;
+            request(app)
+                .post(restURL + '/id/' + publicProject._id + '/stepImage?_id=' + step._id)
+                .attach('image', path)
+                .expect(403, done);
+        });
+    });
+    describe('DELETE /project/id/:id/stepImage?_id=:stepId - delete step image', function () {
+        it('200', function (done) {
+            request(app)
+                .del(restURL + '/id/' + publicProject._id + '/stepImage?_id=' + step._id)
+                .set('Authorization', 'Bearer ' + testuser.accessToken)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) {
+                        return done(err);
+                    }
+                    var data = res.body;
+
+                    expect(data).not.to.be(null);
+                    expect(data).to.be.an('object');
+                    console.log(step.image.path);
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + step.image.path)).to.be(false);
+                    expect(fs.existsSync(process.cwd() + '/static/public/' + step.image.variants[0].path)).to.be(false);
+                    done();
+                });
+        });
+        it('403 - without login', function (done) {
+            request(app)
+                .del(restURL + '/id/' + publicProject._id + '/stepImage?_id=' + step._id)
+                .expect(403, done);
+        });
+    });
     describe('DELETE /project/id/:id/step?_id=:stepid - remove a step of project', function () {
         it('403 - other project', function (done) {
             request(app)

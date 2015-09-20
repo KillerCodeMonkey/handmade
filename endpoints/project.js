@@ -780,6 +780,18 @@ define([
     rest.uploadStepImage = {
         file: true,
         object: true,
+        params: {
+            '_id': {
+                type: String,
+                validate: function (_id) {
+                    if (!_id || !_id.replace(/\s/g, '').length) {
+                        return false;
+                    }
+                    return true;
+                },
+                query: true
+            }
+        },
         permissions: [appConfig.permissions.user],
         exec: function (req, res) {
             var task = [];
@@ -816,24 +828,22 @@ define([
                 if (task.length) {
                     step.images[0].remove();
                 }
-                step.save(function (err) {
+                req.object.save(function (err) {
                     if (err) {
                         return res.status(500).send({
                             error: err
                         });
                     }
-                    helper.imageUpload(req.originalRequest, 'projects/' + req.object._id + '/steps/', opts).then(function (imageObject) {
+                    helper.imageUpload(req.originalRequest, 'projects/' + req.object._id + '/steps', opts).then(function (imageObject) {
                         step.images.addToSet(imageObject);
-                        step.save(function (err, saved) {
+                        req.object.save(function (err, saved) {
                             if (err) {
                                 helper.imageRemove(imageObject);
                                 return res.status(500).send({
                                     error: err
                                 });
                             }
-                            req.object.save(function () {
-                                res.send(saved.toObject());
-                            });
+                            res.send(saved.toObject());
                         });
                     }, function (err) {
                         return res.status(500).send({
@@ -872,7 +882,13 @@ define([
         params: {
             '_id': {
                 type: String,
-                regex: /[^\s]+/g
+                validate: function (_id) {
+                    if (!_id || !_id.replace(/\s/g, '').length) {
+                        return false;
+                    }
+                    return true;
+                },
+                query: true
             }
         },
         object: true,
@@ -882,24 +898,19 @@ define([
             }
 
             var step = req.object.steps.id(req.params._id);
-            if (step) {
+            if (!step || !step.images.length) {
                 return res.send();
             }
 
-            if (!step.images.length) {
-                return res.send();
-            }
             helper.imageRemove(step.images[0]).then(function () {
                 step.images[0].remove();
-                step.save(function (err) {
+                req.object.save(function (err) {
                     if (err) {
                         return res.status(500).send({
                             error: err
                         });
                     }
-                    req.object.save(function () {
-                        res.send();
-                    });
+                    res.send();
                 });
             });
         }
