@@ -82,7 +82,7 @@ module.exports = function (grunt) {
             },
 
             startNode: {
-                command: 'node index'
+                command: 'node index -cron'
             },
 
             startPM2: {
