@@ -1,9 +1,9 @@
 define([
     'appConfig',
     'underscore',
-    'node-promise',
+    'bluebird',
     'util/helper'
-], function (appConfig, _, promise, helper) {
+], function (appConfig, _, Promise, helper) {
     'use strict';
 
     var rest = {},
@@ -657,7 +657,7 @@ define([
             if (req.object.images.length) {
                 task.push(helper.imageRemove(req.object.images[0]));
             }
-            promise.all(task).then(function () {
+            Promise.all(task).then(function () {
                 var opts = {
                     name: 'project',
                     field: 'image',
@@ -806,7 +806,7 @@ define([
             if (step.images.length) {
                 task.push(helper.imageRemove(step.images[0]));
             }
-            promise.all(task).then(function () {
+            Promise.all(task).then(function () {
                 var opts = {
                     name: step._id,
                     field: 'image',

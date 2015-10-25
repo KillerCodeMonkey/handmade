@@ -1,18 +1,17 @@
 define([
     'appConfig',
-    'node-promise',
+    'bluebird',
     'underscore',
     'util/mailer',
     'util/helper'
-], function (appConfig, promise, _, Mailer, helper) {
+], function (appConfig, Promise, _, Mailer, helper) {
     'use strict';
     var rest = {},
         fields = [
             'username',
             'avatar',
             '_id'
-        ],
-        Promise = promise.Promise;
+        ];
 
     function stripUser(user) {
         delete user.hashedPassword;
@@ -20,19 +19,17 @@ define([
     }
 
     function getUser(selector, User) {
-        var q = new Promise();
-
-        User.findOne(selector, function (err, user) {
-            if (err) {
-                return q.reject(err);
-            }
-            if (!user) {
-                return q.resolve(false);
-            }
-            return q.resolve(true);
+        return new Promise(function (resolve, reject) {
+            User.findOne(selector, function (err, user) {
+                if (err) {
+                    return reject(err);
+                }
+                if (!user) {
+                    return resolve(false);
+                }
+                return resolve(true);
+            });
         });
-
-        return q;
     }
 
     /**
@@ -535,7 +532,7 @@ define([
                     error: 'already_logged_in'
                 });
             }
-            promise.allOrNone([getUser({
+            Promise.all([getUser({
                 email: params.email
             }, User), getUser({
                 username: params.username
@@ -759,7 +756,7 @@ define([
                 }, User));
                 setUsername = true;
             }
-            promise.allOrNone(tasks).then(function (results) {
+            Promise.all(tasks).then(function (results) {
                 if (tasks.length && results && results.length) {
                     if (setEmail && results[0]) {
                         return res.status(400).send({
@@ -838,7 +835,7 @@ define([
             if (req.user.avatar.length) {
                 task.push(helper.imageRemove(req.user.avatar[0]));
             }
-            promise.all(task).then(function () {
+            Promise.settle(task).then(function () {
                 var opts = {
                     name: 'avatar',
                     field: 'image',

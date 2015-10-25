@@ -1,31 +1,13 @@
 /*global define, setTimeout*/
 /*jslint node:true, vars:true,nomen:true*/
 define([
-    'node-promise',
+    'bluebird',
     'mongoose',
-    'appConfig',
     'databaseConfig',
-    'fs',
-    'mkdirp',
     'util/modelEndpointHandler'
-], function (promise, mongoose, appConfig, databaseConfig, fs, mkdirp, meHandler) {
+], function (Promise, mongoose, databaseConfig, meHandler) {
     'use strict';
-    var Promise = promise.Promise,
-        connection;
-
-    function save(doc) {
-        var q = new Promise();
-
-        doc.save(function (err, saved) {
-            if (err) {
-                return q.reject(err);
-            }
-
-            q.resolve(saved);
-        });
-
-        return q;
-    }
+    var connection;
 
     return function () {
         var reinstallTask = new Promise(),
@@ -71,13 +53,13 @@ define([
                                     password: '123456'
                                 });
 
-                            tasks.push(save(user));
-                            tasks.push(save(user1));
-                            tasks.push(save(user2));
+                            tasks.push(user.save());
+                            tasks.push(user1.save());
+                            tasks.push(user2.save());
 
                             setTimeout(function () {
-                              connection.close();
-                              reinstallTask.resolve();
+                                connection.close();
+                                reinstallTask.resolve();
                             }, 2000);
                         });
                     });

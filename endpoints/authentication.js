@@ -2,18 +2,15 @@ define([
     'jsonwebtoken',
     'crypto',
     'appConfig',
-    'databaseConfig',
-    'node-promise'
-], function (jwt, crypto, appConfig, dbConfig, promise) {
+    'bluebird'
+], function (jwt, crypto, appConfig, Promise) {
     'use strict';
 
-    var Promise = promise.Promise,
-        rest = {};
+    var rest = {};
 
     // store new authentication for user
     function generateAuthentication(user, Authentication) {
-        var $q = new Promise(),
-            secret = crypto.randomBytes(128).toString('base64'),
+        var secret = crypto.randomBytes(128).toString('base64'),
             userData = {
                 id: user.user || user._id,
                 firstName: user.firstName,
@@ -42,15 +39,15 @@ define([
             refreshToken: refreshToken
         });
 
-        auth.save(function (err) {
-            if (err) {
-                $q.reject(err);
-            } else {
-                $q.resolve(userData);
-            }
+        return new Promise(function (resolve, reject) {
+            auth.save(function (err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(userData);
+                }
+            });
         });
-
-        return $q;
     }
 
      /**
@@ -169,7 +166,7 @@ define([
                         error: 'invalid_login_password_combination'
                     });
                 }
-                promise.allOrNone(tasks).then(function () {
+                Promise.all(tasks).then(function () {
                     generateAuthentication(user, Authentication).then(function (userData) {
                         // generate new password after login.
                         userData.user = user.toObject();
