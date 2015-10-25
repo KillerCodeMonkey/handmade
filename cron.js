@@ -13,7 +13,10 @@ define([
     });
 
     if (process.argv.indexOf('-cron') !== -1) {
-        agenda.start();
+        agenda.on('ready', function () {
+            console.log('CRON start');
+            agenda.start();
+        });
     }
 
     function graceful() {

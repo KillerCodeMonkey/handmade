@@ -4,7 +4,7 @@
  * */
 define([
     'path',
-    'node-promise',
+    'bluebird',
     'express',
     'body-parser',
     'method-override',
@@ -20,13 +20,11 @@ define([
     'middleware/authentication',
     'cron',
     'cors'
-], /** @lends Other */ function (path, promise, express, bodyParser, methodOverride, errorHandler, mongoose, busboy, appConfig, databaseConfig, action, validation, permission, execute, authentication, agenda, cors) {
+], /** @lends Other */ function (path, Promise, express, bodyParser, methodOverride, errorHandler, mongoose, busboy, appConfig, databaseConfig, action, validation, permission, execute, authentication, agenda, cors) {
     'use strict';
 
     var app = express(),
         server,
-        Promise = promise.Promise,
-        q = new Promise(),
         // DB connection
         connection = mongoose.createConnection(databaseConfig.host, databaseConfig.dbname, databaseConfig.port);
 
@@ -34,7 +32,8 @@ define([
         console.info('DB connected');
     });
 
-    connection.on('error', function () {
+    connection.on('error', function (err) {
+        console.log(err);
         console.error('DB exit!');
     });
 
@@ -115,7 +114,7 @@ define([
     // set generic provided api object urls
     app.route('/api/:version/:classname/id/:objectid/:action?').all(action, validation, permission, execute);
 
-    q.resolve(server);
-
-    return q;
+    return new Promise(function (resolve) {
+        resolve(server);
+    });
 });
